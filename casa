@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+
+from tplinkcloud import TPLinkDeviceManager
+
+import configparser
+import argparse
+import asyncio
+import json
+import os
+
+config = configparser.RawConfigParser()   
+configFilePath = os.path.expanduser('~') + '/.casa'
+config.read(configFilePath)
+
+parser = argparse.ArgumentParser(
+                    prog='casa',
+                    description='controller for cloud kasa',
+                    epilog='happy controlling!')
+
+
+parser.add_argument('cmd')           # positional argument
+parser.add_argument('-d', '--device', required=True)      # option that takes a value
+
+
+#username='kasa@email.com'
+#password='secure'
+username = config.get('global', 'username')
+password = config.get('global', 'password')
+
+device_manager = TPLinkDeviceManager(username, password)
+
+async def fetch_all_devices_sys_info():
+  devices = await device_manager.get_devices()
+  fetch_tasks = []
+  for device in devices:
+    async def get_info(device):
+      print(f'Found {device.model_type.name} device: {device.get_alias()}')
+      print("SYS INFO")
+      print(json.dumps(device.device_info, indent=2, default=lambda x: vars(x)
+                        if hasattr(x, "__dict__") else x.name if hasattr(x, "name") else None))
+      print(json.dumps(await device.get_sys_info(), indent=2, default=lambda x: vars(x)
+                        if hasattr(x, "__dict__") else x.name if hasattr(x, "name") else None))
+    fetch_tasks.append(get_info(device))
+  await asyncio.gather(*fetch_tasks)
+  devices_dict = {d.get_alias(): d for d in devices}
+  devices_list = devices
+  return devices_dict, devices_list
+
+
+async def toggle(d):
+  await d.toggle()
+
+async def state(d):
+  is_on = await d.is_on()
+
+  if is_on:
+    return "on"
+
+  return "off"
+
+
+def main():
+  args = parser.parse_args()
+
+  devices_dict, _ = asyncio.run(fetch_all_devices_sys_info())
+
+  dn = args.device
+  d = devices_dict[dn]
+
+  if args.cmd == "toggle":
+    asyncio.run(toggle(d))
+  elif args.cmd == "state":
+    s = asyncio.run(state(d))
+    print(s)
+  else:
+    print('nothing to do')
+
+if __name__ == "__main__":
+  main()
+
