@@ -3,5 +3,4 @@ tplink-cloud-api
 configparser
 argparse
 asyncio
-json
-os
+
