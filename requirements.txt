@@ -5,3 +5,5 @@ argparse
 asyncio
 
 ring_doorbell
+
+Celery

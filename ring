@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+from event import Event
 from ring_doorbell import Ring, Auth
 from pprint import pprint
 import configparser
@@ -135,23 +136,6 @@ def get_tokens(otp_code, ignore_cache=False, no_refresh=False):
   return tokens, auth, status
 
 
-def main():
-
-  logger.info('parsing args')
-  args = parser.parse_args()
-
-  tokens, auth, status = get_tokens(args.otp, args.ignore_cache, args.no_refresh)
-  if status not in [TOKEN_STATE.BRAND_NEW, TOKEN_STATE.FROM_CACHE, TOKEN_STATE.GOOD_REFRESH]:
-    logger.error('could not get login to succeed, exiting...')
-    return
-
-  ring = Ring(auth)
-  ring.update_data()
-  devices = ring.devices()
-  bell = [d for d in devices['doorbots'] if d.name == args.device][0]
-
-  start_checking(bell, CHECK_INTERVAL_IN_SECONDS)
-
 def wait_until(timestamp):
   now = datetime.now(timezone.utc)
   delta = (timestamp - now).total_seconds()
@@ -186,6 +170,24 @@ def start_checking(bell, check_interval_in_seconds):
     logger.info('has_recent_dings: %s, most_recent_ding_age_seconds: %s', has_recent_dings, most_recent_ding_age_seconds)
 
     wait_until(time_now + check_interval)
+
+
+def main():
+
+  logger.info('parsing args')
+  args = parser.parse_args()
+
+  tokens, auth, status = get_tokens(args.otp, args.ignore_cache, args.no_refresh)
+  if status not in [TOKEN_STATE.BRAND_NEW, TOKEN_STATE.FROM_CACHE, TOKEN_STATE.GOOD_REFRESH]:
+    logger.error('could not get login to succeed, exiting...')
+    return
+
+  ring = Ring(auth)
+  ring.update_data()
+  devices = ring.devices()
+  bell = [d for d in devices['doorbots'] if d.name == args.device][0]
+
+  start_checking(bell, CHECK_INTERVAL_IN_SECONDS)
 
 
 if __name__ == "__main__":

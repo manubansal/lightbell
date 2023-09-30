@@ -1,0 +1,12 @@
+install rabbitmq and start rabbitmq
+sudo apt-get install rabbitmq-server
+
+(mac)
+CONF_ENV_FILE="/usr/local/etc/rabbitmq/rabbitmq-env.conf" /usr/local/opt/rabbitmq/sbin/rabbitmq-server
+
+run the celery worker
+celery -A runner worker --loglevel=INFO
+
+TODO: start rabbitmq as a service/daemon
+TODO: make celery into a daemon
+
